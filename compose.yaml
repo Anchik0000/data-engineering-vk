@@ -1,0 +1,156 @@
+name: hh-stand
+
+x-hadoop: &hadoop  
+  image: apache/hadoop:3.4.1
+  env_file: hadoop.env
+  networks: [stand]
+  restart: "no"
+
+x-rustfs: &rustfs
+  image: rustfs/rustfs:1.0.0
+  networks: [stand]
+  restart: "no"
+  environment:
+    RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-hhadmin}
+    RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-hhadmin-secret}
+    RUSTFS_VOLUMES: http://rustfs{1...4}:9000/data
+    RUSTFS_ADDRESS: ":9000"
+    RUSTFS_CONSOLE_ADDRESS: ":9001"
+
+services:
+  namenode:
+    <<: *hadoop
+    hostname: namenode
+    container_name: hh-namenode
+    command: ["bash", "-c", "hdfs namenode; echo 'namenode process exited, container stays up'; sleep infinity"]
+    environment:
+      ENSURE_NAMENODE_DIR: /data/namenode/current
+      HDFS_NAMENODE_OPTS: -Xms1g -Xmx2g
+    ports:
+      - "9870:9870"
+    volumes:
+      - namenode:/data
+
+  dn1:
+    <<: *hadoop
+    hostname: dn1
+    container_name: hh-dn1
+    command: ["hdfs", "datanode"]
+    environment: &dn-env
+      WAITFOR: namenode:8020
+      HDFS_DATANODE_OPTS: -Xms256m -Xmx768m
+    volumes:
+      - dn1:/data
+    depends_on: [namenode]
+
+  dn2:
+    <<: *hadoop
+    hostname: dn2
+    container_name: hh-dn2
+    command: ["hdfs", "datanode"]
+    environment: *dn-env
+    volumes:
+      - dn2:/data
+    depends_on: [namenode]
+
+  dn3:
+    <<: *hadoop
+    hostname: dn3
+    container_name: hh-dn3
+    command: ["hdfs", "datanode"]
+    environment: *dn-env
+    volumes:
+      - dn3:/data
+    depends_on: [namenode]
+
+  dn4:
+    <<: *hadoop
+    hostname: dn4
+    container_name: hh-dn4
+    command: ["hdfs", "datanode"]
+    environment: *dn-env
+    volumes:
+      - dn4:/data
+    depends_on: [namenode]
+
+  client:
+    <<: *hadoop
+    hostname: client
+    container_name: hh-client
+    command: ["sleep", "infinity"]
+    environment:
+      WAITFOR: namenode:8020
+      HADOOP_OPTIONAL_TOOLS: hadoop-aws
+      HADOOP_CLIENT_OPTS: -Xmx1g
+    volumes:
+      - ./:/course:ro
+    depends_on: [namenode]
+
+  rustfs1:
+    <<: *rustfs
+    hostname: rustfs1
+    container_name: hh-rustfs1
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - rustfs1:/data
+      - rustfs1-logs:/logs
+
+  rustfs2:
+    <<: *rustfs
+    hostname: rustfs2
+    container_name: hh-rustfs2
+    volumes:
+      - rustfs2:/data
+      - rustfs2-logs:/logs
+
+  rustfs3:
+    <<: *rustfs
+    hostname: rustfs3
+    container_name: hh-rustfs3
+    volumes:
+      - rustfs3:/data
+      - rustfs3-logs:/logs
+
+  rustfs4:
+    <<: *rustfs
+    hostname: rustfs4
+    container_name: hh-rustfs4
+    volumes:
+      - rustfs4:/data
+      - rustfs4-logs:/logs
+
+  s3cli:
+    image: amazon/aws-cli:2.36.45
+    container_name: hh-s3cli
+    networks: [stand]
+    restart: "no"
+    entrypoint: ["sh", "-c", "sleep infinity"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-hhadmin}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-hhadmin-secret}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://rustfs1:9000
+      AWS_EC2_METADATA_DISABLED: "true"
+    volumes:
+      - ./:/course:ro
+    depends_on: [rustfs1]
+
+networks:
+  stand:
+
+volumes:
+  namenode:
+  dn1:
+  dn2:
+  dn3:
+  dn4:
+  rustfs1:
+  rustfs2:
+  rustfs3:
+  rustfs4:
+  rustfs1-logs:
+  rustfs2-logs:
+  rustfs3-logs:
+  rustfs4-logs:

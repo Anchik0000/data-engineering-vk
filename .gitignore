@@ -1,1 +1,8 @@
 it_vacancies_2024.csv
+**/checkpoints/
+**/version-2/
+**/__pycache__/
+*.pyc
+*.aux
+*.out
+*.toc

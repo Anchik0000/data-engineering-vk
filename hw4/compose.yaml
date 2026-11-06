@@ -1,0 +1,51 @@
+name: zookeeper-ensemble
+
+services:
+  zoo1:
+    image: zookeeper:3.9.6
+    container_name: zoo1
+    hostname: zoo1
+    restart: unless-stopped
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_DATA_DIR: /data/zoo1
+    volumes:
+      - ./zoo1/conf/zoo.cfg:/conf/zoo.cfg
+      - ./zoo1/data:/data/zoo1
+    networks:
+      - zk-net
+
+  zoo2:
+    image: zookeeper:3.9.6
+    container_name: zoo2
+    hostname: zoo2
+    restart: unless-stopped
+    ports:
+      - "2182:2182"
+    environment:
+      ZOO_DATA_DIR: /data/zoo2
+    volumes:
+      - ./zoo2/conf/zoo.cfg:/conf/zoo.cfg
+      - ./zoo2/data:/data/zoo2
+    networks:
+      - zk-net
+
+  zoo3:
+    image: zookeeper:3.9.6
+    container_name: zoo3
+    hostname: zoo3
+    restart: unless-stopped
+    ports:
+      - "2183:2183"
+    environment:
+      ZOO_DATA_DIR: /data/zoo3
+    volumes:
+      - ./zoo3/conf/zoo.cfg:/conf/zoo.cfg
+      - ./zoo3/data:/data/zoo3
+    networks:
+      - zk-net
+
+networks:
+  zk-net:
+    name: zk-net
